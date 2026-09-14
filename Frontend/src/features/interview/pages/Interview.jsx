@@ -1,195 +1,1044 @@
-import React, { useState, useEffect } from 'react'
-import '../style/interview.scss'
-import { useInterview } from '../hooks/useInterview.js'
-import { useNavigate, useParams } from 'react-router'
+import React, { useEffect, useState } from "react";
+import { useInterview } from "../hooks/useInterview.js";
+import { useNavigate, useParams } from "react-router";
+import "../style/interview.scss";
 
 
+/* =========================================================
+   NAVIGATION ITEMS
+========================================================= */
 
 const NAV_ITEMS = [
-    { id: 'technical', label: 'Technical Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>) },
-    { id: 'behavioral', label: 'Behavioral Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>) },
-    { id: 'roadmap', label: 'Road Map', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>) },
-]
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-const QuestionCard = ({ item, index }) => {
-    const [ open, setOpen ] = useState(false)
-    return (
-        <div className='q-card'>
-            <div className='q-card__header' onClick={() => setOpen(o => !o)}>
-                <span className='q-card__index'>Q{index + 1}</span>
-                <p className='q-card__question'>{item.question}</p>
-                <span className={`q-card__chevron ${open ? 'q-card__chevron--open' : ''}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                </span>
-            </div>
-            {open && (
-                <div className='q-card__body'>
-                    <div className='q-card__section'>
-                        <span className='q-card__tag q-card__tag--intention'>Intention</span>
-                        <p>{item.intention}</p>
-                    </div>
-                    <div className='q-card__section'>
-                        <span className='q-card__tag q-card__tag--answer'>Model Answer</span>
-                        <p>{item.answer}</p>
-                    </div>
-                </div>
-            )}
-        </div>
-    )
-}
-
-const RoadMapDay = ({ day }) => (
-    <div className='roadmap-day'>
-        <div className='roadmap-day__header'>
-            <span className='roadmap-day__badge'>Day {day.day}</span>
-            <h3 className='roadmap-day__focus'>{day.focus}</h3>
-        </div>
-        <ul className='roadmap-day__tasks'>
-            {day.tasks.map((task, i) => (
-                <li key={i}>
-                    <span className='roadmap-day__bullet' />
-                    {task}
-                </li>
-            ))}
-        </ul>
-    </div>
-)
-
-// ── Main Component ────────────────────────────────────────────────────────────
-const Interview = () => {
-    const [ activeNav, setActiveNav ] = useState('technical')
-    const { report, getReportById, loading, getResumePdf } = useInterview()
-    const { interviewId } = useParams()
-
-    useEffect(() => {
-        if (interviewId) {
-            getReportById(interviewId)
-        }
-    }, [ interviewId ])
-
-
-
-    if (loading || !report) {
-        return (
-            <main className='loading-screen'>
-                <h1>Loading your interview plan...</h1>
-            </main>
+    {
+        id: "technical",
+        label: "Technical",
+        fullLabel: "Technical Questions",
+        icon: (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            >
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+            </svg>
+        )
+    },
+    {
+        id: "behavioral",
+        label: "Behavioral",
+        fullLabel: "Behavioral Questions",
+        icon: (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+        )
+    },
+    {
+        id: "roadmap",
+        label: "Roadmap",
+        fullLabel: "Preparation Roadmap",
+        icon: (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            >
+                <polygon points="3 11 22 2 13 21 11 13 3 11" />
+            </svg>
         )
     }
+];
 
-    const scoreColor =
-        report.matchScore >= 80 ? 'score--high' :
-            report.matchScore >= 60 ? 'score--mid' : 'score--low'
 
+/* =========================================================
+   ICONS
+========================================================= */
+
+const BackIcon = () => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <line x1="19" y1="12" x2="5" y2="12" />
+        <polyline points="12 19 5 12 12 5" />
+    </svg>
+);
+
+
+const DownloadIcon = () => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <path d="M12 3v12" />
+        <path d="m7 10 5 5 5-5" />
+        <path d="M5 21h14" />
+    </svg>
+);
+
+
+const SparkleIcon = () => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="currentColor"
+    >
+        <path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
+    </svg>
+);
+
+
+/* =========================================================
+   QUESTION CARD
+========================================================= */
+
+const QuestionCard = ({ item, index }) => {
+
+    const [open, setOpen] = useState(false);
 
     return (
-        <div className='interview-page'>
-            <div className='interview-layout'>
+        <article
+            className={`q-card ${open ? "q-card--open" : ""}`}
+        >
 
-                {/* ── Left Nav ── */}
-                <nav className='interview-nav'>
-                    <div className="nav-content">
-                        <p className='interview-nav__label'>Sections</p>
-                        {NAV_ITEMS.map(item => (
-                            <button
-                                key={item.id}
-                                className={`interview-nav__item ${activeNav === item.id ? 'interview-nav__item--active' : ''}`}
-                                onClick={() => setActiveNav(item.id)}
-                            >
-                                <span className='interview-nav__icon'>{item.icon}</span>
-                                {item.label}
-                            </button>
-                        ))}
+            <button
+                type="button"
+                className="q-card__header"
+                onClick={() => setOpen((current) => !current)}
+                aria-expanded={open}
+            >
+
+                <span className="q-card__number">
+                    {String(index + 1).padStart(2, "0")}
+                </span>
+
+
+                <span className="q-card__content">
+
+                    <span className="q-card__eyebrow">
+                        QUESTION {index + 1}
+                    </span>
+
+                    <span className="q-card__question">
+                        {item.question}
+                    </span>
+
+                </span>
+
+
+                <span className="q-card__toggle">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+
+                </span>
+
+            </button>
+
+
+            {open && (
+
+                <div className="q-card__body">
+
+                    <div className="answer-block">
+
+                        <div className="answer-block__heading">
+
+                            <span className="answer-icon answer-icon--intention">
+                                ?
+                            </span>
+
+                            <div>
+                                <span className="answer-block__label">
+                                    Interviewer Intention
+                                </span>
+
+                                <span className="answer-block__hint">
+                                    What this question evaluates
+                                </span>
+                            </div>
+
+                        </div>
+
+
+                        <p>
+                            {item.intention}
+                        </p>
+
                     </div>
+
+
+                    <div className="answer-block answer-block--model">
+
+                        <div className="answer-block__heading">
+
+                            <span className="answer-icon answer-icon--answer">
+                                ✓
+                            </span>
+
+                            <div>
+                                <span className="answer-block__label">
+                                    Model Answer
+                                </span>
+
+                                <span className="answer-block__hint">
+                                    A strong way to approach this question
+                                </span>
+                            </div>
+
+                        </div>
+
+
+                        <p>
+                            {item.answer}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            )}
+
+        </article>
+    );
+};
+
+
+/* =========================================================
+   ROADMAP DAY
+========================================================= */
+
+const RoadMapDay = ({ day, index, total }) => (
+
+    <article className="roadmap-card">
+
+        <div className="roadmap-card__timeline">
+
+            <span className="roadmap-card__dot">
+                {String(index + 1).padStart(2, "0")}
+            </span>
+
+            {index !== total - 1 && (
+                <span className="roadmap-card__line"></span>
+            )}
+
+        </div>
+
+
+        <div className="roadmap-card__content">
+
+            <div className="roadmap-card__top">
+
+                <div>
+
+                    <span className="roadmap-card__day">
+                        DAY {day.day}
+                    </span>
+
+                    <h3>
+                        {day.focus}
+                    </h3>
+
+                </div>
+
+            </div>
+
+
+            <ul>
+
+                {day.tasks.map((task, taskIndex) => (
+
+                    <li key={taskIndex}>
+
+                        <span className="roadmap-task-check">
+                            ✓
+                        </span>
+
+                        <span>
+                            {task}
+                        </span>
+
+                    </li>
+
+                ))}
+
+            </ul>
+
+        </div>
+
+    </article>
+);
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+const EmptyState = ({ title, description }) => (
+
+    <div className="empty-state">
+
+        <div className="empty-state__icon">
+            ✦
+        </div>
+
+        <h3>
+            {title}
+        </h3>
+
+        <p>
+            {description}
+        </p>
+
+    </div>
+);
+
+
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
+
+const Interview = () => {
+
+    const [activeNav, setActiveNav] = useState("technical");
+
+    const {
+        report,
+        getReportById,
+        loading,
+        getResumePdf
+    } = useInterview();
+
+    const { interviewId } = useParams();
+
+    const navigate = useNavigate();
+
+
+    /* =====================================================
+       LOAD REPORT
+    ===================================================== */
+
+    useEffect(() => {
+
+        if (interviewId) {
+            getReportById(interviewId);
+        }
+
+    }, [interviewId]);
+
+
+    /* =====================================================
+       LOADING
+    ===================================================== */
+
+    if (loading || !report) {
+
+        return (
+
+            <main className="interview-loading">
+
+                <div className="loading-orb">
+                    <SparkleIcon />
+                </div>
+
+                <h1>
+                    Preparing your interview report
+                </h1>
+
+                <p>
+                    Analyzing your profile and preparation strategy...
+                </p>
+
+                <div className="loading-bar">
+                    <span></span>
+                </div>
+
+            </main>
+
+        );
+    }
+
+
+    /* =====================================================
+       SCORE
+    ===================================================== */
+
+    const score = Number(report.matchScore) || 0;
+
+    const scoreLevel =
+        score >= 80
+            ? "high"
+            : score >= 60
+                ? "medium"
+                : "low";
+
+
+    const scoreMessage =
+        score >= 80
+            ? "Excellent match"
+            : score >= 60
+                ? "Good match"
+                : "Needs improvement";
+
+
+    const technicalQuestions =
+        report.technicalQuestions || [];
+
+    const behavioralQuestions =
+        report.behavioralQuestions || [];
+
+    const preparationPlan =
+        report.preparationPlan || [];
+
+    const skillGaps =
+        report.skillGaps || [];
+
+
+    /* =====================================================
+       CURRENT SECTION TITLE
+    ===================================================== */
+
+    const activeItem =
+        NAV_ITEMS.find((item) => item.id === activeNav);
+
+
+    /* =====================================================
+       RENDER
+    ===================================================== */
+
+    return (
+
+        <div className="interview-page">
+
+            <div className="interview-shell">
+
+
+                {/* =================================================
+                    HEADER
+                ================================================= */}
+
+                <header className="interview-header">
+
                     <button
-                        onClick={() => { getResumePdf(interviewId) }}
-                        className='button primary-button' >
-                        <svg height={"0.8rem"} style={{ marginRight: "0.8rem" }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10.6144 17.7956 11.492 15.7854C12.2731 13.9966 13.6789 12.5726 15.4325 11.7942L17.8482 10.7219C18.6162 10.381 18.6162 9.26368 17.8482 8.92277L15.5079 7.88394C13.7092 7.08552 12.2782 5.60881 11.5105 3.75894L10.6215 1.61673C10.2916.821765 9.19319.821767 8.8633 1.61673L7.97427 3.75892C7.20657 5.60881 5.77553 7.08552 3.97685 7.88394L1.63658 8.92277C.868537 9.26368.868536 10.381 1.63658 10.7219L4.0523 11.7942C5.80589 12.5726 7.21171 13.9966 7.99275 15.7854L8.8704 17.7956C9.20776 18.5682 10.277 18.5682 10.6144 17.7956ZM19.4014 22.6899 19.6482 22.1242C20.0882 21.1156 20.8807 20.3125 21.8695 19.8732L22.6299 19.5353C23.0412 19.3526 23.0412 18.7549 22.6299 18.5722L21.9121 18.2532C20.8978 17.8026 20.0911 16.9698 19.6586 15.9269L19.4052 15.3156C19.2285 14.8896 18.6395 14.8896 18.4628 15.3156L18.2094 15.9269C17.777 16.9698 16.9703 17.8026 15.956 18.2532L15.2381 18.5722C14.8269 18.7549 14.8269 19.3526 15.2381 19.5353L15.9985 19.8732C16.9874 20.3125 17.7798 21.1156 18.2198 22.1242L18.4667 22.6899C18.6473 23.104 19.2207 23.104 19.4014 22.6899Z"></path></svg>
-                        Download Resume
+                        type="button"
+                        className="back-dashboard"
+                        onClick={() => navigate("/dashboard")}
+                    >
+
+                        <BackIcon />
+
+                        <span>
+                            Dashboard
+                        </span>
+
                     </button>
+
+
+                    <div className="interview-header__center">
+
+                        <div className="header-brand-mark">
+                            ✦
+                        </div>
+
+                        <div>
+
+                            <span>
+                                AI INTERVIEW PREP
+                            </span>
+
+                            <strong>
+                                Interview Report
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        className="download-resume"
+                        onClick={() => getResumePdf(interviewId)}
+                    >
+
+                        <DownloadIcon />
+
+                        <span>
+                            Download Resume
+                        </span>
+
+                    </button>
+
+                </header>
+
+
+                {/* =================================================
+                    REPORT HERO
+                ================================================= */}
+
+                <section className="report-hero">
+
+                    <div className="report-hero__copy">
+
+                        <span className="report-eyebrow">
+                            ✦ AI-GENERATED INTERVIEW ANALYSIS
+                        </span>
+
+                        <h1>
+                            Your Interview
+                            <span>
+                                Preparation Report
+                            </span>
+                        </h1>
+
+                        <p>
+                            Review the questions, skill gaps and preparation
+                            roadmap generated specifically for your target role.
+                        </p>
+
+                    </div>
+
+
+                    {/* Score Card */}
+
+                    <div className={`score-card score-card--${scoreLevel}`}>
+
+                        <div className="score-card__info">
+
+                            <span className="score-card__label">
+                                MATCH SCORE
+                            </span>
+
+                            <strong>
+                                {score}%
+                            </strong>
+
+                            <span className="score-card__message">
+                                {scoreMessage}
+                            </span>
+
+                        </div>
+
+
+                        <div className="score-ring">
+
+                            <div className="score-ring__inner">
+
+                                <SparkleIcon />
+
+                                <span>
+                                    AI
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                {/* =================================================
+                    MOBILE / DESKTOP SECTION NAV
+                ================================================= */}
+
+                <nav className="section-tabs">
+
+                    {NAV_ITEMS.map((item) => (
+
+                        <button
+                            type="button"
+                            key={item.id}
+                            className={
+                                activeNav === item.id
+                                    ? "section-tab section-tab--active"
+                                    : "section-tab"
+                            }
+                            onClick={() => setActiveNav(item.id)}
+                        >
+
+                            <span className="section-tab__icon">
+                                {item.icon}
+                            </span>
+
+                            <span className="section-tab__label">
+
+                                <span className="section-tab__desktop-label">
+                                    {item.fullLabel}
+                                </span>
+
+                                <span className="section-tab__mobile-label">
+                                    {item.label}
+                                </span>
+
+                            </span>
+
+                        </button>
+
+                    ))}
+
                 </nav>
 
-                <div className='interview-divider' />
 
-                {/* ── Center Content ── */}
-                <main className='interview-content'>
-                    {activeNav === 'technical' && (
-                        <section>
-                            <div className='content-header'>
-                                <h2>Technical Questions</h2>
-                                <span className='content-header__count'>{report.technicalQuestions.length} questions</span>
-                            </div>
-                            <div className='q-list'>
-                                {report.technicalQuestions.map((q, i) => (
-                                    <QuestionCard key={i} item={q} index={i} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                {/* =================================================
+                    CONTENT GRID
+                ================================================= */}
 
-                    {activeNav === 'behavioral' && (
-                        <section>
-                            <div className='content-header'>
-                                <h2>Behavioral Questions</h2>
-                                <span className='content-header__count'>{report.behavioralQuestions.length} questions</span>
-                            </div>
-                            <div className='q-list'>
-                                {report.behavioralQuestions.map((q, i) => (
-                                    <QuestionCard key={i} item={q} index={i} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                <div className="report-grid">
 
-                    {activeNav === 'roadmap' && (
-                        <section>
-                            <div className='content-header'>
-                                <h2>Preparation Road Map</h2>
-                                <span className='content-header__count'>{report.preparationPlan.length}-day plan</span>
-                            </div>
-                            <div className='roadmap-list'>
-                                {report.preparationPlan.map((day) => (
-                                    <RoadMapDay key={day.day} day={day} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </main>
 
-                <div className='interview-divider' />
+                    {/* =================================================
+                        MAIN CONTENT
+                    ================================================= */}
 
-                {/* ── Right Sidebar ── */}
-                <aside className='interview-sidebar'>
+                    <main className="report-main">
 
-                    {/* Match Score */}
-                    <div className='match-score'>
-                        <p className='match-score__label'>Match Score</p>
-                        <div className={`match-score__ring ${scoreColor}`}>
-                            <span className='match-score__value'>{report.matchScore}</span>
-                            <span className='match-score__pct'>%</span>
-                        </div>
-                        <p className='match-score__sub'>Strong match for this role</p>
-                    </div>
+                        <div className="section-heading">
 
-                    <div className='sidebar-divider' />
+                            <div>
 
-                    {/* Skill Gaps */}
-                    <div className='skill-gaps'>
-                        <p className='skill-gaps__label'>Skill Gaps</p>
-                        <div className='skill-gaps__list'>
-                            {report.skillGaps.map((gap, i) => (
-                                <span key={i} className={`skill-tag skill-tag--${gap.severity}`}>
-                                    {gap.skill}
+                                <span>
+                                    {activeNav === "technical"
+                                        ? "TECHNICAL ASSESSMENT"
+                                        : activeNav === "behavioral"
+                                            ? "BEHAVIORAL ASSESSMENT"
+                                            : "PERSONALIZED PLAN"
+                                    }
                                 </span>
-                            ))}
+
+                                <h2>
+                                    {activeItem?.fullLabel}
+                                </h2>
+
+                            </div>
+
+
+                            {activeNav !== "roadmap" && (
+
+                                <span className="question-count">
+
+                                    {activeNav === "technical"
+                                        ? technicalQuestions.length
+                                        : behavioralQuestions.length
+                                    }
+
+                                    <small>
+                                        questions
+                                    </small>
+
+                                </span>
+
+                            )}
+
+                            {activeNav === "roadmap" && (
+
+                                <span className="question-count">
+
+                                    {preparationPlan.length}
+
+                                    <small>
+                                        days
+                                    </small>
+
+                                </span>
+
+                            )}
+
                         </div>
-                    </div>
 
-                </aside>
+
+                        {/* =================================================
+                            TECHNICAL
+                        ================================================= */}
+
+                        {activeNav === "technical" && (
+
+                            technicalQuestions.length > 0 ? (
+
+                                <div className="question-list">
+
+                                    {technicalQuestions.map(
+                                        (question, index) => (
+
+                                            <QuestionCard
+                                                key={index}
+                                                item={question}
+                                                index={index}
+                                            />
+
+                                        )
+                                    )}
+
+                                </div>
+
+                            ) : (
+
+                                <EmptyState
+                                    title="No technical questions"
+                                    description="No technical questions were generated for this report."
+                                />
+
+                            )
+
+                        )}
+
+
+                        {/* =================================================
+                            BEHAVIORAL
+                        ================================================= */}
+
+                        {activeNav === "behavioral" && (
+
+                            behavioralQuestions.length > 0 ? (
+
+                                <div className="question-list">
+
+                                    {behavioralQuestions.map(
+                                        (question, index) => (
+
+                                            <QuestionCard
+                                                key={index}
+                                                item={question}
+                                                index={index}
+                                            />
+
+                                        )
+                                    )}
+
+                                </div>
+
+                            ) : (
+
+                                <EmptyState
+                                    title="No behavioral questions"
+                                    description="No behavioral questions were generated for this report."
+                                />
+
+                            )
+
+                        )}
+
+
+                        {/* =================================================
+                            ROADMAP
+                        ================================================= */}
+
+                        {activeNav === "roadmap" && (
+
+                            preparationPlan.length > 0 ? (
+
+                                <div className="roadmap-list">
+
+                                    {preparationPlan.map(
+                                        (day, index) => (
+
+                                            <RoadMapDay
+                                                key={day.day || index}
+                                                day={day}
+                                                index={index}
+                                                total={preparationPlan.length}
+                                            />
+
+                                        )
+                                    )}
+
+                                </div>
+
+                            ) : (
+
+                                <EmptyState
+                                    title="No preparation roadmap"
+                                    description="A preparation roadmap was not generated for this report."
+                                />
+
+                            )
+
+                        )}
+
+                    </main>
+
+
+                    {/* =================================================
+                        RIGHT INSIGHTS
+                    ================================================= */}
+
+                    <aside className="report-insights">
+
+
+                        {/* Score */}
+
+                        <section className="insight-card insight-score">
+
+                            <div className="insight-card__heading">
+
+                                <div>
+
+                                    <span>
+                                        YOUR SCORE
+                                    </span>
+
+                                    <h3>
+                                        Match Analysis
+                                    </h3>
+
+                                </div>
+
+                                <span className="insight-sparkle">
+                                    ✦
+                                </span>
+
+                            </div>
+
+
+                            <div className="insight-score__value">
+
+                                <strong>
+                                    {score}
+                                </strong>
+
+                                <span>
+                                    / 100
+                                </span>
+
+                            </div>
+
+
+                            <div className="insight-progress">
+
+                                <span
+                                    style={{
+                                        width: `${Math.min(score, 100)}%`
+                                    }}
+                                ></span>
+
+                            </div>
+
+
+                            <p>
+                                {score >= 80
+                                    ? "Your profile aligns strongly with the requirements of this role."
+                                    : score >= 60
+                                        ? "You have a solid foundation, but there are areas worth improving."
+                                        : "Focus on the identified skill gaps before your interview."
+                                }
+                            </p>
+
+                        </section>
+
+
+                        {/* Skill Gaps */}
+
+                        <section className="insight-card">
+
+                            <div className="insight-card__heading">
+
+                                <div>
+
+                                    <span>
+                                        AREAS TO IMPROVE
+                                    </span>
+
+                                    <h3>
+                                        Skill Gaps
+                                    </h3>
+
+                                </div>
+
+                                <span className="gap-count">
+                                    {skillGaps.length}
+                                </span>
+
+                            </div>
+
+
+                            {skillGaps.length > 0 ? (
+
+                                <div className="skill-gap-list">
+
+                                    {skillGaps.map((gap, index) => (
+
+                                        <div
+                                            key={index}
+                                            className={`skill-gap skill-gap--${gap.severity}`}
+                                        >
+
+                                            <div className="skill-gap__icon">
+                                                {gap.severity === "high"
+                                                    ? "!"
+                                                    : gap.severity === "medium"
+                                                        ? "!"
+                                                        : "✓"
+                                                }
+                                            </div>
+
+                                            <div className="skill-gap__content">
+
+                                                <strong>
+                                                    {gap.skill}
+                                                </strong>
+
+                                                <span>
+                                                    {gap.severity === "high"
+                                                        ? "High priority"
+                                                        : gap.severity === "medium"
+                                                            ? "Needs attention"
+                                                            : "Minor gap"
+                                                    }
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
+                                    ))}
+
+                                </div>
+
+                            ) : (
+
+                                <p className="no-gaps">
+                                    No major skill gaps identified.
+                                </p>
+
+                            )}
+
+                        </section>
+
+
+                        {/* Preparation Summary */}
+
+                        <section className="insight-card preparation-summary">
+
+                            <div className="insight-card__heading">
+
+                                <div>
+
+                                    <span>
+                                        PREPARATION
+                                    </span>
+
+                                    <h3>
+                                        Your Plan
+                                    </h3>
+
+                                </div>
+
+                                <span className="plan-icon">
+                                    →
+                                </span>
+
+                            </div>
+
+
+                            <div className="summary-row">
+
+                                <div>
+                                    <strong>
+                                        {technicalQuestions.length}
+                                    </strong>
+
+                                    <span>
+                                        Technical
+                                    </span>
+                                </div>
+
+
+                                <div>
+                                    <strong>
+                                        {behavioralQuestions.length}
+                                    </strong>
+
+                                    <span>
+                                        Behavioral
+                                    </span>
+                                </div>
+
+
+                                <div>
+                                    <strong>
+                                        {preparationPlan.length}
+                                    </strong>
+
+                                    <span>
+                                        Days
+                                    </span>
+                                </div>
+
+                            </div>
+
+                        </section>
+
+
+                        {/* Mobile Resume */}
+
+                        <button
+                            type="button"
+                            className="mobile-download"
+                            onClick={() => getResumePdf(interviewId)}
+                        >
+
+                            <DownloadIcon />
+
+                            Download Resume
+
+                        </button>
+
+                    </aside>
+
+                </div>
+
+
+                {/* =================================================
+                    FOOTER
+                ================================================= */}
+
+                <footer className="interview-footer">
+
+                    <span>
+                        ✦ AI Interview Prep
+                    </span>
+
+                    <span>
+                        Personalized for your next opportunity
+                    </span>
+
+                </footer>
+
             </div>
-        </div>
-    )
-}
 
-export default Interview
+        </div>
+    );
+};
+
+
+export default Interview;

@@ -1,13 +1,19 @@
 {
-  "name": "yt-genai",
+  "name": "ai-careerpilot-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend API for AI CareerPilot",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx nodemon server.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js"
   },
-  "keywords": [],
+  "keywords": [
+    "mern",
+    "ai",
+    "interview",
+    "gemini",
+    "career"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
