@@ -7,6 +7,116 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENAI_API_KEY
 });
 
+/*
+ * Number of times Gemini will be retried when a temporary
+ * service error occurs.
+ */
+const MAX_RETRIES = 3;
+
+/*
+ * Wait before trying Gemini again.
+ */
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/*
+ * Generate content with automatic retry for temporary
+ * Gemini availability/rate-limit/server errors.
+ */
+async function generateWithRetry(request) {
+    let lastError;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            console.log(
+                `Gemini request attempt ${attempt}/${MAX_RETRIES}`
+            );
+
+            const response = await ai.models.generateContent(request);
+
+            console.log("Gemini request successful");
+
+            return response;
+        } catch (error) {
+            lastError = error;
+
+            const errorMessage =
+                error?.message ||
+                error?.toString() ||
+                "";
+
+            const errorStatus =
+                error?.status ||
+                error?.code ||
+                "";
+
+            const isTemporaryError =
+                errorStatus === 429 ||
+                errorStatus === 500 ||
+                errorStatus === 502 ||
+                errorStatus === 503 ||
+                errorStatus === 504 ||
+                errorMessage.includes("503") ||
+                errorMessage.includes("UNAVAILABLE") ||
+                errorMessage.includes("high demand") ||
+                errorMessage.includes("temporarily");
+
+            console.error(
+                `Gemini request failed on attempt ${attempt}:`,
+                errorMessage
+            );
+
+            /*
+             * If the error is not temporary, don't retry it.
+             */
+            if (!isTemporaryError) {
+                throw error;
+            }
+
+            /*
+             * If this was the final attempt, stop retrying.
+             */
+            if (attempt === MAX_RETRIES) {
+                break;
+            }
+
+            /*
+             * Exponential backoff:
+             *
+             * Attempt 1 → wait 2 seconds
+             * Attempt 2 → wait 4 seconds
+             * Attempt 3 → final attempt
+             */
+            const delay = 2000 * Math.pow(2, attempt - 1);
+
+            console.log(
+                `Gemini temporarily unavailable. Retrying in ${
+                    delay / 1000
+                } seconds...`
+            );
+
+            await wait(delay);
+        }
+    }
+
+    /*
+     * Give the controller a clear error after all retries fail.
+     */
+    const finalError = new Error(
+        "AI service is temporarily unavailable. Please try again in a moment."
+    );
+
+    finalError.status = 503;
+    finalError.cause = lastError;
+
+    throw finalError;
+}
+
+
+/*
+ * Interview report schema
+ */
 const interviewReportSchema = z.object({
     matchScore: z
         .number()
@@ -71,7 +181,9 @@ const interviewReportSchema = z.object({
             z.object({
                 skill: z
                     .string()
-                    .describe("The skill which the candidate is lacking"),
+                    .describe(
+                        "The skill which the candidate is lacking"
+                    ),
 
                 severity: z
                     .enum(["low", "medium", "high"])
@@ -117,6 +229,7 @@ const interviewReportSchema = z.object({
         )
 });
 
+
 /**
  * Generate AI interview report
  */
@@ -137,17 +250,20 @@ Job Description:
 ${jobDescription}
 `;
 
-    const response = await ai.models.generateContent({
+    const response = await generateWithRetry({
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(interviewReportSchema)
+            responseSchema: zodToJsonSchema(
+                interviewReportSchema
+            )
         }
     });
 
     return JSON.parse(response.text);
 }
+
 
 /**
  * Convert HTML content into PDF using Puppeteer
@@ -184,8 +300,10 @@ async function generatePdfFromHtml(htmlContent) {
     }
 }
 
+
 /**
- * Generate ATS-friendly resume PDF using Gemini + Puppeteer
+ * Generate ATS-friendly resume PDF
+ * using Gemini + Puppeteer
  */
 async function generateResumePdf({
     resume,
@@ -228,21 +346,26 @@ Focus on quality rather than quantity and include relevant information that can 
 The HTML should be well-formatted and structured, making it easy to read and visually appealing.
 `;
 
-    const response = await ai.models.generateContent({
+    const response = await generateWithRetry({
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(resumePdfSchema)
+            responseSchema: zodToJsonSchema(
+                resumePdfSchema
+            )
         }
     });
 
     const jsonContent = JSON.parse(response.text);
 
-    const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
+    const pdfBuffer = await generatePdfFromHtml(
+        jsonContent.html
+    );
 
     return pdfBuffer;
 }
+
 
 module.exports = {
     generateInterviewReport,
