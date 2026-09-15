@@ -1,41 +1,94 @@
-import React, { useState, useRef } from 'react'
-import "../style/home.scss"
-import { useInterview } from '../hooks/useInterview.js'
-import { useNavigate } from 'react-router'
+import React, { useState, useRef, useEffect } from "react";
+import "../style/home.scss";
+import { useInterview } from "../hooks/useInterview.js";
+import { useAuth } from "../../auth/hooks/useAuth.js";
+import { useNavigate } from "react-router";
 
 const Home = () => {
 
-    const { loading, generateReport, reports } = useInterview()
+    const { loading, generateReport, reports } = useInterview();
+    const { user, handleLogout } = useAuth();
 
-    const [jobDescription, setJobDescription] = useState("")
-    const [selfDescription, setSelfDescription] = useState("")
-    const [resumeName, setResumeName] = useState("")
+    const [jobDescription, setJobDescription] = useState("");
+    const [selfDescription, setSelfDescription] = useState("");
+    const [resumeName, setResumeName] = useState("");
+    const [profileOpen, setProfileOpen] = useState(false);
 
-    const resumeInputRef = useRef()
+    const resumeInputRef = useRef();
+    const profileRef = useRef();
 
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+
+    /* Close profile dropdown when clicking outside */
+    useEffect(() => {
+
+        const handleClickOutside = (event) => {
+
+            if (
+                profileRef.current &&
+                !profileRef.current.contains(event.target)
+            ) {
+                setProfileOpen(false);
+            }
+
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener(
+                "mousedown",
+                handleClickOutside
+            );
+        };
+
+    }, []);
 
     const handleGenerateReport = async () => {
 
-        const resumeFile = resumeInputRef.current.files[0]
+        const resumeFile = resumeInputRef.current.files[0];
 
         const data = await generateReport({
             jobDescription,
             selfDescription,
             resumeFile
-        })
+        });
 
-        navigate(`/interview/${data._id}`)
-    }
+        navigate(`/interview/${data._id}`);
+    };
 
     const handleResumeChange = (e) => {
 
-        const file = e.target.files[0]
+        const file = e.target.files[0];
 
         if (file) {
-            setResumeName(file.name)
+            setResumeName(file.name);
         }
-    }
+
+    };
+
+    const handleUserLogout = async () => {
+
+        setProfileOpen(false);
+
+        await handleLogout();
+
+        navigate("/login");
+
+    };
+
+    const getInitial = () => {
+
+        if (user?.username) {
+            return user.username.charAt(0).toUpperCase();
+        }
+
+        if (user?.email) {
+            return user.email.charAt(0).toUpperCase();
+        }
+
+        return "U";
+    };
 
     if (loading) {
         return (
@@ -56,12 +109,208 @@ const Home = () => {
                 </div>
 
             </main>
-        )
+        );
     }
 
     return (
 
         <div className="home-page">
+
+            {/* =========================
+                TOP NAVIGATION
+            ========================= */}
+
+            <nav className="dashboard-nav">
+
+                <div
+                    className="dashboard-brand"
+                    onClick={() => navigate("/dashboard")}
+                >
+
+                    <div className="dashboard-brand__logo">
+                        ✦
+                    </div>
+
+                    <div className="dashboard-brand__text">
+                        <strong>
+                            AI CareerPilot
+                        </strong>
+
+                        <span>
+                            Prepare Today. Grow Tomorrow.
+                        </span>
+                    </div>
+
+                </div>
+
+
+                {/* PROFILE */}
+
+                <div
+                    className="profile-wrapper"
+                    ref={profileRef}
+                >
+
+                    <button
+                        type="button"
+                        className={`profile-button ${
+                            profileOpen
+                                ? "profile-button--active"
+                                : ""
+                        }`}
+                        onClick={() =>
+                            setProfileOpen(!profileOpen)
+                        }
+                    >
+
+                        <span className="profile-avatar">
+                            {getInitial()}
+                        </span>
+
+                        <span className="profile-user">
+
+                            <strong>
+                                {user?.username || "User"}
+                            </strong>
+
+                            <small>
+                                My Account
+                            </small>
+
+                        </span>
+
+                        <span
+                            className={`profile-chevron ${
+                                profileOpen
+                                    ? "profile-chevron--open"
+                                    : ""
+                            }`}
+                        >
+                            ↓
+                        </span>
+
+                    </button>
+
+
+                    {/* PROFILE DROPDOWN */}
+
+                    {profileOpen && (
+
+                        <div className="profile-menu">
+
+                            <div className="profile-menu__header">
+
+                                <div className="profile-menu__avatar">
+                                    {getInitial()}
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        {user?.username || "User"}
+                                    </strong>
+
+                                    <span>
+                                        {user?.email || ""}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div className="profile-menu__divider"></div>
+
+
+                            <button
+                                type="button"
+                                className="profile-menu__item"
+                                onClick={() => {
+                                    setProfileOpen(false);
+                                }}
+                            >
+
+                                <span className="profile-menu__icon">
+                                    👤
+                                </span>
+
+                                <span>
+                                    Profile
+                                </span>
+
+                            </button>
+
+
+                            <button
+                                type="button"
+                                className="profile-menu__item"
+                                onClick={() => {
+                                    setProfileOpen(false);
+                                }}
+                            >
+
+                                <span className="profile-menu__icon">
+                                    📊
+                                </span>
+
+                                <span>
+                                    My Progress
+                                </span>
+
+                            </button>
+
+
+                            <button
+                                type="button"
+                                className="profile-menu__item"
+                                onClick={() => {
+                                    setProfileOpen(false);
+
+                                    window.scrollTo({
+                                        top: document.body.scrollHeight,
+                                        behavior: "smooth"
+                                    });
+                                }}
+                            >
+
+                                <span className="profile-menu__icon">
+                                    📝
+                                </span>
+
+                                <span>
+                                    Interview History
+                                </span>
+
+                            </button>
+
+
+                            <div className="profile-menu__divider"></div>
+
+
+                            <button
+                                type="button"
+                                className="profile-menu__item profile-menu__item--logout"
+                                onClick={handleUserLogout}
+                            >
+
+                                <span className="profile-menu__icon">
+                                    ↪
+                                </span>
+
+                                <span>
+                                    Logout
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                    )}
+
+                </div>
+
+            </nav>
+
 
             {/* =========================
                 PAGE HEADER
@@ -97,9 +346,7 @@ const Home = () => {
 
                 <div className="interview-card__body">
 
-                    {/* =========================
-                        JOB DESCRIPTION
-                    ========================= */}
+                    {/* TARGET JOB */}
 
                     <section className="panel panel--left">
 
@@ -171,18 +418,14 @@ Requirements:
                     </section>
 
 
-                    {/* =========================
-                        DIVIDER
-                    ========================= */}
+                    {/* DIVIDER */}
 
                     <div className="panel-divider">
                         <span>AND</span>
                     </div>
 
 
-                    {/* =========================
-                        USER PROFILE
-                    ========================= */}
+                    {/* USER PROFILE */}
 
                     <section className="panel panel--right">
 
@@ -211,7 +454,7 @@ Requirements:
                         </div>
 
 
-                        {/* Resume */}
+                        {/* RESUME */}
 
                         <div className="upload-section">
 
@@ -299,7 +542,7 @@ Requirements:
                         </div>
 
 
-                        {/* Self Description */}
+                        {/* SELF DESCRIPTION */}
 
                         <div className="self-description">
 
@@ -325,7 +568,7 @@ Requirements:
                         </div>
 
 
-                        {/* Info Box */}
+                        {/* INFO BOX */}
 
                         <div className="info-box">
 
@@ -501,7 +744,7 @@ Requirements:
             <footer className="page-footer">
 
                 <span>
-                    © 2026 AI Interview Prep
+                    © 2026 AI CareerPilot
                 </span>
 
                 <div>
@@ -523,7 +766,7 @@ Requirements:
             </footer>
 
         </div>
-    )
-}
+    );
+};
 
-export default Home
+export default Home;
